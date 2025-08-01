@@ -3,7 +3,7 @@
   :url "http://example.com/clojure-todo-web"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.3"]
+  :dependencies [[org.clojure/clojure "1.12.1"]
                  [ring "1.9.3"]
                  [ring/ring-json "0.5.0"]
                  [ring/ring-defaults "0.3.4"]
