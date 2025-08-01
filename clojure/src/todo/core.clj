@@ -63,9 +63,9 @@
 (defn delete-todo [id]
   (sql/delete! @datasource :todos {:id id}))
 
-
-(defn- parse-int [x]
-  (Integer/parseInt (str x)))
+(defn error-if-missing [msg status-code value]
+  (when (nil? value)
+    {:status status-code :body msg}))
 
 (def api-routes
   [["/" {:get {:handler (fn [_]
@@ -79,23 +79,21 @@
                         :headers {"Cache-Control" "no-store"}
                         :body (list-todos)})}
       :post {:handler (fn [{:keys [body]}]
-                        (let [title (or (get body "title")
-                                        (get body :title))]
-                          (if (and title (not (str/blank? title)))
-                            (let [row (create-todo title)]
-                              {:status 201 :body row})
-                            {:status 400 :body {:error "title is required"}})))}}]
+                        (let [title (not-empty (:title body))]
+                          (or (error-if-missing "title is required" 400 title)
+                              (try (let [row (create-todo title)]
+                                     {:status 201 :body row})
+                                   (catch Exception e
+                                     {:status 500 :body (ex-message e)})))))}}]
     ["/tasks/:id"
      {:patch {:handler (fn [{:keys [path-params body]}]
-                       (let [id (parse-int (:id path-params))
-                             completed (or (get body "completed")
-                                            (get body :completed)
-                                            false)
-                             title (or (get body "title")
-                                        (get body :title))]
-                         {:status 200 :body (update-todo id title completed)}))}
-     :delete {:handler (fn [{:keys [path-params]}]
-                          (delete-todo (parse-int (:id path-params)))
+                         (let [id (parse-long (:id path-params))
+                               completed (:completed body false)
+                               title (or (get body "title")
+                                         (get body :title))]
+                           {:status 200 :body (update-todo id title completed)}))}
+      :delete {:handler (fn [{:keys [path-params]}]
+                          (delete-todo (parse-long (:id path-params)))
                           {:status 200 :body nil})}}]
                               ]])
 
@@ -105,7 +103,7 @@
        (ring/create-default-handler))
       (wrap-json-response)
       ;; Accept JSON request bodies; keep keys as-is to be permissive
-      (wrap-json-body {:keywords? false})
+      (wrap-json-body {:keywords? true})
       (wrap-params)
       ;; Serve files from resources/public at /
       (wrap-resource "public")))
@@ -113,4 +111,4 @@
 (defn -main [& _]
   (init!)
   (println "Starting server on http://localhost:3000")
-  (jetty/run-jetty app {:port 3000 :join? true}))
+  (jetty/run-jetty app {:port 3000 :join? false}))
