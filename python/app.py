@@ -27,6 +27,39 @@ def get_db():
     db.commit()
     return db
 
+
+@app.route('/api/tasks', methods=['POST'])
+def add_tasks():
+    db = get_db()
+    data = request.get_json()
+    if not data or 'title' not in data:
+        return jsonify({'error': 'Title is required'}), 400
+
+    title = data['title']
+    created_at = datetime.datetime.now().isoformat()
+
+    cursor = db.execute(
+        'INSERT INTO todos (title, created_at) VALUES (?, ?)',
+        (title, created_at)
+    )
+    db.commit()
+    
+    return jsonify({
+        'id': cursor.lastrowid,
+        'title': title,
+        'completed': 0,
+        'created_at': created_at
+    }), 201
+
+class Task(Base):
+     __tablename__ = "task"
+
+     id: Mapped[int] = mapped_column(primary_key=True)
+     title: Mapped[str] = mapped_column(Text)
+     completed: Mapped[int]
+     created_at: Mapped[int]
+
+
 @app.route('/api/tasks', methods=['GET', 'POST'])
 def handle_tasks():
     db = get_db()
