@@ -2,4 +2,6 @@
 
 Sample todo server
 
-## Clojure
+- [Clojure](./clojure/README.md)
+- [Python](./python/README.md)
+- [Javascript](./javascript/README.md)
